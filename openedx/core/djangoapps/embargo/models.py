@@ -90,6 +90,9 @@ class EmbargoedState(ConfigurationModel):
             return []
         return [country.strip().upper() for country in self.embargoed_countries.split(',')]
 
+    def __unicode__(self):
+        return self.embargoed_countries
+
 
 class RestrictedCourse(models.Model):
     """Course with access restrictions.
@@ -575,6 +578,7 @@ post_delete.connect(invalidate_country_rule_cache, sender=RestrictedCourse)
 
 class CourseAccessRuleHistory(models.Model):
     """History of course access rule changes. """
+    # pylint: disable=model-missing-unicode
 
     timestamp = models.DateTimeField(db_index=True, auto_now_add=True)
     course_key = CourseKeyField(max_length=255, db_index=True)
@@ -684,14 +688,14 @@ class IPFilter(ConfigurationModel):
             for network in self.networks:
                 yield network
 
-        def __contains__(self, ip):
+        def __contains__(self, ip_addr):
             try:
-                ip = ipaddr.IPAddress(ip)
+                ip_addr = ipaddr.IPAddress(ip_addr)
             except ValueError:
                 return False
 
             for network in self.networks:
-                if network.Contains(ip):
+                if network.Contains(ip_addr):
                     return True
 
             return False
@@ -713,3 +717,6 @@ class IPFilter(ConfigurationModel):
         if self.blacklist == '':
             return []
         return self.IPFilterList([addr.strip() for addr in self.blacklist.split(',')])
+
+    def __unicode__(self):
+        return "Whitelist: {} - Blacklist: {}".format(self.whitelist_ips, self.blacklist_ips)

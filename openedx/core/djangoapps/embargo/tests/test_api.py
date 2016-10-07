@@ -229,6 +229,9 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
 
     @contextmanager
     def _mock_geoip(self, country_code):
+        """
+        Mock for the GeoIP module.
+        """
         with mock.patch.object(pygeoip.GeoIP, 'country_code_by_addr') as mock_ip:
             mock_ip.return_value = country_code
             yield
