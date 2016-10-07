@@ -6,7 +6,7 @@ import pygeoip
 
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
-from embargo.models import Country, CountryAccessRule, RestrictedCourse
+from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 
 
 @contextlib.contextmanager

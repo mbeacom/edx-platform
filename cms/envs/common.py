@@ -367,7 +367,7 @@ MIDDLEWARE_CLASSES = (
     # Allows us to dark-launch particular languages
     'openedx.core.djangoapps.dark_lang.middleware.DarkLangMiddleware',
 
-    'embargo.middleware.EmbargoMiddleware',
+    'openedx.core.djangoapps.embargo.middleware.EmbargoMiddleware',
 
     # Detects user-requested locale from 'accept-language' header in http request
     'django.middleware.locale.LocaleMiddleware',
@@ -865,7 +865,7 @@ INSTALLED_APPS = (
     'django_openid_auth',
 
     # Country embargo support
-    'embargo',
+    'openedx.core.djangoapps.embargo',
 
     # Monitoring signals
     'openedx.core.djangoapps.monitoring',

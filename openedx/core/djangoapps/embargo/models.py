@@ -8,7 +8,7 @@ file and check it in at the same time as your model changes. To do that,
 
 1. Go to the edx-platform dir
 2. ./manage.py lms schemamigration embargo --auto description_of_your_change
-3. Add the migration file created in edx-platform/common/djangoapps/embargo/migrations/
+3. Add the migration file created in edx-platform/openedx/core/djangoapps/embargo/migrations/
 """
 
 import ipaddr
@@ -27,8 +27,8 @@ from django_countries import countries
 from config_models.models import ConfigurationModel
 from openedx.core.djangoapps.xmodule_django.models import CourseKeyField, NoneToEmptyManager
 
-from embargo.exceptions import InvalidAccessPoint
-from embargo.messages import ENROLL_MESSAGES, COURSEWARE_MESSAGES
+from openedx.core.djangoapps.embargo.exceptions import InvalidAccessPoint
+from openedx.core.djangoapps.embargo.messages import ENROLL_MESSAGES, COURSEWARE_MESSAGES
 
 
 log = logging.getLogger(__name__)

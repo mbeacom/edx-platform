@@ -5,8 +5,12 @@ from django.contrib import admin
 import textwrap
 
 from config_models.admin import ConfigurationModelAdmin
-from embargo.models import IPFilter, CountryAccessRule, RestrictedCourse
-from embargo.forms import IPFilterForm, RestrictedCourseForm
+from openedx.core.djangoapps.embargo.models import (
+    IPFilter, CountryAccessRule, RestrictedCourse
+)
+from openedx.core.djangoapps.embargo.forms import (
+    IPFilterForm, RestrictedCourseForm
+)
 
 
 class IPFilterAdmin(ConfigurationModelAdmin):

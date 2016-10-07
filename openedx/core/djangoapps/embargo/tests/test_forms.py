@@ -9,8 +9,8 @@ from opaque_keys.edx.locator import CourseLocator
 
 # Explicitly import the cache from ConfigurationModel so we can reset it after each test
 from config_models.models import cache
-from embargo.models import IPFilter
-from embargo.forms import RestrictedCourseForm, IPFilterForm
+from openedx.core.djangoapps.embargo.models import IPFilter
+from openedx.core.djangoapps.embargo.forms import RestrictedCourseForm, IPFilterForm
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

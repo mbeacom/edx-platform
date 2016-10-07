@@ -25,13 +25,13 @@ from student.roles import (
     OrgStaffRole, OrgInstructorRole
 )
 
-from embargo.models import (
+from openedx.core.djangoapps.embargo.models import (
     RestrictedCourse, Country, CountryAccessRule,
 )
 
 from util.testing import UrlResetMixin
-from embargo import api as embargo_api
-from embargo.exceptions import InvalidAccessPoint
+from openedx.core.djangoapps.embargo import api as embargo_api
+from openedx.core.djangoapps.embargo.exceptions import InvalidAccessPoint
 from mock import patch
 
 
@@ -240,7 +240,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
 class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
     """Test the embargo API calls for retrieving the blocking message URLs. """
 
-    URLCONF_MODULES = ['embargo']
+    URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
     ENABLED_CACHES = ['default', 'mongo_metadata_inheritance', 'loc_cache']
 
     @patch.dict(settings.FEATURES, {'EMBARGO': True})

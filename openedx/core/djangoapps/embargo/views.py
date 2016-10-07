@@ -5,7 +5,7 @@ from django.views.generic.base import View
 
 from edxmako.shortcuts import render_to_response
 
-from embargo import messages
+from openedx.core.djangoapps.embargo import messages
 
 
 class CourseAccessMessageView(View):
