@@ -2025,15 +2025,8 @@ INSTALLED_APPS = (
     # RSS Proxy
     'rss_proxy',
 
-<<<<<<< HEAD
     # Country embargo support
-    'embargo',
-=======
-    # Student Identity Reverification
-    'reverification',
-
     'openedx.core.djangoapps.embargo',
->>>>>>> Move embargo from common to openedx/core/djangoapps.
 
     # Monitoring functionality
     'openedx.core.djangoapps.monitoring',
