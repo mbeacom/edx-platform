@@ -10,8 +10,8 @@ from openedx.core.lib.grade_utils import is_score_higher
 from student.models import user_by_anonymous_id
 from submissions.models import score_set, score_reset
 
-from .signals import SCORE_CHANGED, SCORE_PUBLISHED
-from ..tasks import recalculate_subsection_grade
+from .signals import COURSE_GRADE_UPDATE_REQUESTED, SCORE_CHANGED, SCORE_PUBLISHED
+from ..tasks import recalculate_subsection_grade, recalculate_course_grade
 
 
 log = getLogger(__name__)
@@ -119,9 +119,9 @@ def score_published_handler(sender, block, user, raw_earned, raw_possible, only_
 
 
 @receiver(SCORE_CHANGED)
-def enqueue_grade_update(sender, **kwargs):  # pylint: disable=unused-argument
+def enqueue_subsection_update(sender, **kwargs):  # pylint: disable=unused-argument
     """
-    Handles the SCORE_CHANGED signal by enqueueing an update operation to occur asynchronously.
+    Handles the SCORE_CHANGED signal by enqueueing a subsection update operation to occur asynchronously.
     """
     recalculate_subsection_grade.apply_async(
         args=(
@@ -131,3 +131,14 @@ def enqueue_grade_update(sender, **kwargs):  # pylint: disable=unused-argument
             kwargs.get('only_if_higher'),
         )
     )
+
+
+@receiver(COURSE_GRADE_UPDATE_REQUESTED)
+def enqueue_course_update(sender, **kwargs):  # pylint: disable=unused-argument
+    """
+    Handles the COURSE_GRADE_UPDATE_REQUESTED signal by enqueueing a course update operation to occur asynchronously.
+    """
+    if sender is recalculate_subsection_grade:  # We're already in a async worker, just do the task
+        recalculate_course_grade.apply(args=(kwargs['user_id'], kwargs['course_id']))
+    else:  # Otherwise, queue the work to be done asynchronously
+        recalculate_course_grade.apply_async(args=(kwargs['user_id'], kwargs['course_id']))
