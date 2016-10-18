@@ -4,6 +4,7 @@ page. Each block gives information about a particular
 course-run-specific date which will be displayed to the user.
 """
 from datetime import datetime
+import pytz
 
 from babel.dates import format_timedelta
 from django.core.urlresolvers import reverse
@@ -12,12 +13,10 @@ from django.utils.translation import ugettext_lazy
 from django.utils.translation import to_locale, get_language
 from edxmako.shortcuts import render_to_string
 from lazy import lazy
-from pytz import utc
 
 from course_modes.models import CourseMode
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.verify_student.models import VerificationDeadline, SoftwareSecurePhotoVerification
-from openedx.core.lib.time_zone_utils import get_time_zone_abbr, get_user_time_zone
 from student.models import CourseEnrollment
 
 
@@ -67,8 +66,12 @@ class DateSummary(object):
 
     @property
     def time_zone(self):
-        """The time zone to display in"""
-        return get_user_time_zone(self.user)
+        """
+        The time zone to display in -- defaulted to UTC
+        """
+        return pytz.timezone(
+            self.user.preferences.model.get_value(self.user, "time_zone", 'UTC')
+        )
 
     def __init__(self, course, user):
         self.course = course
@@ -99,7 +102,7 @@ class DateSummary(object):
         if self.date is None:
             return ''
         locale = to_locale(get_language())
-        delta = self.date - datetime.now(utc)
+        delta = self.date - datetime.now(pytz.utc)
         try:
             relative_date = format_timedelta(delta, locale=locale)
         # Babel doesn't have translations for Esperanto, so we get
@@ -129,7 +132,7 @@ class DateSummary(object):
         future.
         """
         if self.date is not None:
-            return datetime.now(utc) <= self.date
+            return datetime.now(pytz.utc) <= self.date
         return False
 
     def __repr__(self):
@@ -149,7 +152,7 @@ class TodaysDate(DateSummary):
 
     @property
     def date_format(self):
-        return u'%b %d, %Y (%H:%M {tz_abbr})'.format(tz_abbr=get_time_zone_abbr(self.time_zone))
+        return u'%b %d, %Y (%H:%M {tz_abbr})'.format(tz_abbr=self.time_zone.zone)
 
     # The date is shown in the title, no need to display it again.
     def get_context(self):
@@ -159,7 +162,7 @@ class TodaysDate(DateSummary):
 
     @property
     def date(self):
-        return datetime.now(utc)
+        return datetime.now(pytz.utc)
 
     @property
     def title(self):
@@ -193,7 +196,7 @@ class CourseEndDate(DateSummary):
 
     @property
     def description(self):
-        if datetime.now(utc) <= self.date:
+        if datetime.now(pytz.utc) <= self.date:
             mode, is_active = CourseEnrollment.enrollment_mode_for_user(self.user, self.course.id)
             if is_active and CourseMode.is_eligible_for_certificate(mode):
                 return _('To earn a certificate, you must complete all requirements before this date.')
@@ -338,7 +341,7 @@ class VerificationDeadlineDate(DateSummary):
         Return True if a verification deadline exists, and has already passed.
         """
         deadline = self.date
-        return deadline is not None and deadline <= datetime.now(utc)
+        return deadline is not None and deadline <= datetime.now(pytz.utc)
 
     def must_retry(self):
         """Return True if the user must re-submit verification, False otherwise."""

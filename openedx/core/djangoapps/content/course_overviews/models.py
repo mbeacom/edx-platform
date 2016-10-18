@@ -357,8 +357,18 @@ class CourseOverview(TimeStampedModel):
         """
         Returns True if the course starts with-in given number of days otherwise returns False.
         """
-
         return course_metadata_utils.course_starts_within(self.start, days)
+
+    def retrieve_datetime(self, get_start=True):
+        """
+        Returns the desired datetime string corresponding to the course's salient date
+        formatted as an ISO string.
+        """
+        if get_start is True:
+            return_date = self.start
+        else:
+            return_date = self.end
+        return return_date.strftime('%Y-%m-%dT%H:%M:%S%z')
 
     def start_datetime_text(self, format_string="SHORT_DATE", time_zone=utc):
         """
@@ -389,6 +399,7 @@ class CourseOverview(TimeStampedModel):
     def end_datetime_text(self, format_string="SHORT_DATE", time_zone=utc):
         """
         Returns the end date or datetime for the course formatted as a string.
+
         """
         return course_metadata_utils.course_end_datetime_text(
             self.end,

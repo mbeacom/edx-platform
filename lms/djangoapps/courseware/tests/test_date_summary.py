@@ -195,7 +195,7 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
         Test today's date block displays correctly during
         daylight savings hours
         """
-        self._today_date_helper('Nov 01, 2015 (01:59 PDT)')
+        self._today_date_helper('Nov 01, 2015 (01:59 America/Los_Angeles)')
 
     @freeze_time('2015-11-01 09:00:00')
     def test_todays_date_time_zone_normal(self):
@@ -203,7 +203,7 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
         Test today's date block displays correctly during
         normal daylight hours
         """
-        self._today_date_helper('Nov 01, 2015 (01:00 PST)')
+        self._today_date_helper('Nov 01, 2015 (01:00 America/Los_Angeles)')
 
     @freeze_time('2015-01-02')
     def test_todays_date_render(self):
