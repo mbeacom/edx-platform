@@ -12,6 +12,7 @@ try:
 except ImportError:
     import json
 
+import newrelic.agent
 import dogstats_wrapper as dog_stats_api
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -120,6 +121,18 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             sample_rate=self.API_DATADOG_SAMPLE_RATE,
         )
 
+    def _nr_capture_metric(self, function_name, stat_name, stat_value, block_type=None):
+        """
+        Capture a statistic about this user state transaction in New Relic.
+        """
+        metric_name_parts = []
+        if block_type is None:
+            metric_name_parts = ['xb_user_state', function_name, stat_name]
+        else:
+            metric_name_parts = ['xb_user_state', function_name, block_type, stat_name]
+        metric_name = '.'.join(metric_name_parts)
+        newrelic.agent.add_custom_parameter(metric_name, stat_value)
+
     def get_many(self, username, block_keys, scope=Scope.user_state, fields=None):
         """
         Retrieve the stored XBlock state for the specified XBlock usages.
@@ -137,7 +150,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         if scope != Scope.user_state:
             raise ValueError("Only Scope.user_state is supported, not {}".format(scope))
 
-        block_count = state_length = 0
+        block_stats_by_type = {}
         evt_time = time()
 
         self._ddog_histogram(evt_time, 'get_many.blks_requested', len(block_keys))
@@ -149,29 +162,45 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 continue
 
             state = json.loads(module.state)
-            state_length += len(module.state)
+            state_length = len(module.state)
 
-            self._ddog_histogram(evt_time, 'get_many.block_size', len(module.state))
+            # NOTE: should this line be before the check for empty state?
+            self._ddog_histogram(evt_time, 'get_many.block_size', state_length)
 
             # If the state is the empty dict, then it has been deleted, and so
             # conformant UserStateClients should treat it as if it doesn't exist.
             if state == {}:
                 continue
 
+            # collect statistics for DataDog/New Relic reporting
+            block_stats_by_type.setdefault(usage_key.block_type, {})
+            block_stats_by_type[usage_key.block_type].setdefault('count', 0)
+            block_stats_by_type[usage_key.block_type].setdefault('size', 0)
+            block_stats_by_type[usage_key.block_type]['count'] += 1
+            block_stats_by_type[usage_key.block_type]['size'] += state_length
+
+            # filter state on fields
             if fields is not None:
                 state = {
                     field: state[field]
                     for field in fields
                     if field in state
                 }
-            block_count += 1
             yield XBlockUserState(username, usage_key, state, module.modified, scope)
 
-        # The rest of this method exists only to submit DataDog events.
-        # Remove it once we're no longer interested in the data.
+        # The rest of this method exists only to submit DataDog and New Relic metrics.
         finish_time = time()
-        self._ddog_histogram(evt_time, 'get_many.blks_out', block_count)
-        self._ddog_histogram(evt_time, 'get_many.response_time', (finish_time - evt_time) * 1000)
+        duration = (finish_time - evt_time) * 1000  # milliseconds
+        total_block_count = sum([block_info['count'] for block_info in block_stats_by_type.values()])
+        total_state_length = sum([block_info['size'] for block_info in block_stats_by_type.values()])
+        self._ddog_histogram(evt_time, 'get_many.blks_out', total_block_count)
+        self._ddog_histogram(evt_time, 'get_many.response_time', duration)
+        self._nr_capture_metric('get_many', 'num_items', total_block_count)
+        self._nr_capture_metric('get_many', 'data_size', total_state_length)
+        self._nr_capture_metric('get_many', 'duration', duration)
+        for block_type, block_info in block_stats_by_type.iteritems():
+            self._nr_capture_metric('get_many', 'num_items', block_info['count'], block_type=block_type)
+            self._nr_capture_metric('get_many', 'data_size', block_info['size'], block_type=block_type)
 
     def set_many(self, username, block_keys_to_state, scope=Scope.user_state):
         """
