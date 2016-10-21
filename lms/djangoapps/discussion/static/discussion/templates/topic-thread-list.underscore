@@ -1,4 +1,24 @@
-<li data-test="TEST" data-id="<%- id %>" class="forum-nav-thread<% if (neverRead) { %> never-read<% } %>">
+<ul class="forum-nav-thread-list">
+<% _.each(threads, function(thread) { %>
+  <%
+  var threadCommentCount = thread.get('comments_count'),
+      threadUnreadCommentCount = thread.get('unread_comments_count'),
+      neverRead = !thread.get('read') && threadUnreadCommentCount === threadCommentCount,
+      id = thread.get('id'),
+      unread_comments_count = thread.get('unread_comments_count'),
+      threadUrl = thread.urlFor('retrieve'),
+      thread_type = thread.get('thread_type'),
+      endorsed = thread.get('endorsed'),
+      subscribed = thread.get('subscribed'),
+      pinned = thread.get('pinned'),
+      read = thread.get('read'),
+      comments_count = thread.get('comments_count'),
+      title = thread.get('title'),
+      staff_authored = thread.get('_authored'),
+      community_ta_authored = thread.get('community_ta_authored'),
+      votes = thread.get('votes');
+  %>
+<li data-id="<%- id %>" class="forum-nav-thread<% if (neverRead) { %> never-read<% } %>">
   <a href="<%- threadUrl %>" class="forum-nav-thread-link">
     <div class="forum-nav-thread-wrapper-0">
       <%
@@ -54,7 +74,8 @@
         <% } %>
         </ul>
       <% } %>
-    </div><div class="forum-nav-thread-wrapper-2">
+    </div>
+    <div class="forum-nav-thread-wrapper-2">
       <%
       // Translators: 'votes_count' is a numerical placeholder for a specific discussion thread; 'span_start' and 'span_end' placeholders refer to HTML markup.  Please translate the word 'votes'.
       var fmt = ngettext(
@@ -106,3 +127,6 @@
     </div>
   </a>
 </li>
+
+<% }); %>
+</ul>

@@ -60,18 +60,20 @@
                 this.threadSelected = function() {
                     return DiscussionThreadListView.prototype.threadSelected.apply(self, arguments);
                 };
-                this.renderThread = function() {
+/*                this.renderThread = function() {
                     return DiscussionThreadListView.prototype.renderThread.apply(self, arguments);
                 };
+*/
                 this.loadMorePages = function() {
                     return DiscussionThreadListView.prototype.loadMorePages.apply(self, arguments);
                 };
                 this.showMetadataAccordingToSort = function() {
                     return DiscussionThreadListView.prototype.showMetadataAccordingToSort.apply(self, arguments);
                 };
-                this.renderThreads = function() {
+/*                this.renderThreads = function() {
                     return DiscussionThreadListView.prototype.renderThreads.apply(self, arguments);
                 };
+*/
                 this.updateSidebar = function() {
                     return DiscussionThreadListView.prototype.updateSidebar.apply(self, arguments);
                 };
@@ -262,21 +264,22 @@
                 this.$('.forum-nav-sort-control option[value=' + this.collection.sort_preference + ']')
                     .prop('selected', true);
                 $(window).bind('load scroll resize', this.updateSidebar);
-                this.displayedCollection.on('reset', this.renderThreads);
-                this.displayedCollection.on('thread:remove', this.renderThreads);
+                //this.displayedCollection.on('reset', this.renderThreads);
+                //this.displayedCollection.on('thread:remove', this.renderThreads);
                 this.displayedCollection.on('change:commentable_id', function() {
                     if (self.mode === 'commentables') {
                         return self.retrieveDiscussions(self.discussionIds.split(','));
                     }
                 });
-                this.renderThreads();
+                //this.renderThreads();
                 this.showBrowseMenu(true);
                 return this;
             };
 
             DiscussionThreadListView.prototype.renderThreads = function() {
-                var $content, thread, i, len;
+                /*var $content, thread, i, len;
                 this.$('.forum-nav-thread-list').empty();
+                console.log('DiscussionThreadListView displayedCollection.models: ', this.displayedCollection.models);
                 for (i = 0, len = this.displayedCollection.models.length; i < len; i++) {
                     thread = this.displayedCollection.models[i];
                     $content = this.renderThread(thread);
@@ -286,6 +289,7 @@
                 this.renderMorePages();
                 this.updateSidebar();
                 this.trigger('threads:rendered');
+                */
             };
 
             DiscussionThreadListView.prototype.showMetadataAccordingToSort = function() {
@@ -370,7 +374,7 @@
                     });
                 }
                 error = function() {
-                    self.renderThreads();
+                    //self.renderThreads();
                     DiscussionUtil.discussionAlert(
                         gettext('Sorry'), gettext('We had some trouble loading more threads. Please try again.')
                     );
@@ -390,13 +394,13 @@
                             threadUrl: thread.urlFor('retrieve')
                         },
                         thread.toJSON()
-                    );console.log($(this.threadListItemTemplate(context).toString()));
+                    );
                 return $(this.threadListItemTemplate(context).toString());
             };
 
             DiscussionThreadListView.prototype.threadSelected = function(e) {
                 var threadId;
-                threadId = $(e.target).closest('.forum-nav-thread').attr('data-id');
+                threadId = $(e.target).closest('.forum-nav-thread').attr('data-id'); console.log('threadId ', threadId);
                 this.setActiveThread(threadId);
                 this.trigger('thread:selected', threadId);
                 return false;

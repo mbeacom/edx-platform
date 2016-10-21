@@ -26,7 +26,7 @@
                     router,
                     breadcrumbs,
                     BreadcrumbsModel,
-                    DiscussionTopicThreadListViewModel,
+                    discussionTopicThreadListView,
                     searchBox,
                     routerEvents;
 
@@ -88,10 +88,10 @@
                 }).render();
 
                 discussionTopicThreadListView = new DiscussionTopicThreadListView({
-                        collection: this.discussion,
-                        el: $('.forum-nav'),
-                        courseSettings: this.course_settings
-                    }).render();
+                    collection: discussion,
+                    el: $('.forum-nav'),
+                    courseSettings: courseSettings
+                }).render(); console.log(discussionTopicThreadListView);
 
                 routerEvents = {
                     // Add new breadcrumbs and clear search box when the user selects topics

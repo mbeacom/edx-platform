@@ -10,20 +10,36 @@
     function(_, Backbone, HtmlUtils, threadListTemplate) {
         var discussionTopicThreadListView = Backbone.View.extend({
             events: {
-                //'topic:selected': 'clearSearch'
+                //'topic:selected': 'renderThreads'
             },
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'threadListView'));
+                this.displayedCollection = new Discussion(this.collection.models, {
+                    pages: this.collection.pages
+                });
 
-                this.template = HtmlUtils.template(threadListTemplate);
-                this.threadListView = options.threadListView;
-
+                
+                //this.threadListView = options.threadListView;
                 this.listenTo(this.model, 'change', this.render);
                 this.render();
             },
             render: function() {
-                HtmlUtils.setHtml(this.$el, this.template());
+                HtmlUtils.setHtml(this.$('.forum-nav-thread-list'), HtmlUtils.template(threadListTemplate)({
+                     threads: this.displayedCollection.models
+                }));
                 return this;
+            },
+            renderEachThreadList: function(thread) {
+                var threadCommentCount = thread.get('comments_count'),
+                    threadUnreadCommentCount = thread.get('unread_comments_count'),
+                    neverRead = !thread.get('read') && threadUnreadCommentCount === threadCommentCount,
+                    context = _.extend(
+                        {
+                            neverRead: neverRead,
+                            threadUrl: thread.urlFor('retrieve')
+                        },
+                        thread.toJSON()
+                    );console.log(context.thread);
+                return $(this.template(context.thread).toString());
             }
         });
 
