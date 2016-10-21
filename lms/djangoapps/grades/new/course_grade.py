@@ -109,14 +109,6 @@ class CourseGrade(object):
         self.compute_and_update()
 
     @property
-    def has_access_to_course(self):
-        """
-        Returns whether the course structure as seen by the
-        given student is non-empty.
-        """
-        return _has_access_to_course(self.course_structure)
-
-    @property
     def percent(self):
         """
         Returns a rounded percent from the overall grade.
@@ -317,7 +309,7 @@ class CourseGradeFactory(object):
         """
         course_structure = get_course_blocks(self.student, course.location)
         # if user does not have access to this course, throw an exception
-        if not _has_access_to_course(course_structure):
+        if not self._user_has_access_to_course(course_structure):
             raise PermissionDenied("User does not have access to this course")
         return (
             self._get_saved_grade(course, course_structure) or
@@ -354,6 +346,10 @@ class CourseGradeFactory(object):
         )
         return saved_course_grade
 
-
-def _has_access_to_course(course_structure):
-    return len(course_structure) > 0
+    def _user_has_access_to_course(self, course_structure):
+        """
+        Given a course structure, returns whether the user
+        for whom that course structure was retrieved
+        has access to the course.
+        """
+        return len(course_structure) > 0
