@@ -575,6 +575,7 @@ class TestCourseGradeLogging(SharedModuleStoreTestCase):
         ):
             with patch('lms.djangoapps.grades.new.course_grade.log') as log_mock:
                 # TODO: once merged with the "glue code" PR, update expected logging to include the relevant new info
+
                 # the course grade has not been created, so we expect each grade to be created
                 self._create_course_grade_and_check_logging(
                     grade_factory,

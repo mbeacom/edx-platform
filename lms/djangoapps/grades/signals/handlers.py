@@ -2,6 +2,7 @@
 Grades related signals.
 """
 
+from celery import Task
 from django.dispatch import receiver
 from logging import getLogger
 
@@ -138,7 +139,7 @@ def enqueue_course_update(sender, **kwargs):  # pylint: disable=unused-argument
     """
     Handles the COURSE_GRADE_UPDATE_REQUESTED signal by enqueueing a course update operation to occur asynchronously.
     """
-    if sender is recalculate_subsection_grade:  # We're already in a async worker, just do the task
+    if isinstance(sender, Task):  # We're already in a async worker, just do the task
         recalculate_course_grade.apply(args=(kwargs['user_id'], kwargs['course_id']))
     else:  # Otherwise, queue the work to be done asynchronously
         recalculate_course_grade.apply_async(args=(kwargs['user_id'], kwargs['course_id']))

@@ -70,15 +70,15 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         """
         self.set_up_course()
         if test_signal == SCORE_CHANGED:
-            expected_args = self.score_changed_kwargs.values()
+            expected_args = tuple(self.score_changed_kwargs.values())
         else:
-            expected_args = [self.score_changed_kwargs['user_id'], self.score_changed_kwargs['course_id']]
+            expected_args = (self.score_changed_kwargs['user_id'], self.score_changed_kwargs['course_id'])
         with patch(
             enqueue_op,
             return_value=None
         ) as mock_task_apply:
             test_signal.send(sender=None, **self.score_changed_kwargs)
-            mock_task_apply.assert_called_once_with(args=tuple(expected_args))
+            mock_task_apply.assert_called_once_with(args=expected_args)
 
     @patch('lms.djangoapps.grades.signals.signals.COURSE_GRADE_UPDATE_REQUESTED.send')
     def test_subsection_update_triggers_course_update(self, mock_course_signal):
@@ -98,24 +98,26 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         """
         Ensures that the course update operation is enqueued on an async queue (or not) as expected.
         """
-        base = 'lms.djangoapps.grades.tasks.recalculate_course_grade.apply'
+        base = 'lms.djangoapps.grades.tasks.recalculate_course_grade'
         if should_be_async:
-            execute = base + '_async'
-            other = base
+            executed = base + '.apply_async'
+            other = base + '.apply'
+            sender = None
         else:
-            execute = base
-            other = base + '_async'
+            executed = base + '.apply'
+            other = base + '.apply_async'
+            sender = recalculate_subsection_grade
         self.set_up_course()
 
-        with patch(execute, return_value=None) as task_to_execute:
+        with patch(executed, return_value=None) as executed_task:
             with patch(other, return_value=None) as other_task:
                 COURSE_GRADE_UPDATE_REQUESTED.send(
-                    sender=None if should_be_async else recalculate_subsection_grade,
+                    sender=sender,
                     course_id=self.score_changed_kwargs['course_id'],
                     user_id=self.score_changed_kwargs['user_id'],
                 )
                 other_task.assert_not_called()
-                task_to_execute.assert_called_once_with(
+                executed_task.assert_called_once_with(
                     args=(
                         self.score_changed_kwargs['user_id'],
                         self.score_changed_kwargs['course_id'],
