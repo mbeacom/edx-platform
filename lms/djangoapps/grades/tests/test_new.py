@@ -496,7 +496,7 @@ class TestCourseGradeLogging(SharedModuleStoreTestCase, ProblemSubmissionTestMix
                     grade_factory,
                     log_mock.warning,
                     log_statement
-                    )
+                )
                 log_mock.reset_mock()
 
                 # the course grade has been created, so we expect to read it from the db

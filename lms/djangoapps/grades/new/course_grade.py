@@ -34,7 +34,6 @@ class CourseGrade(object):
         self._letter_grade = None
         self.subsection_grade_factory = SubsectionGradeFactory(self.student, self.course, self.course_structure)
 
-
     @classmethod
     def load_persisted_grade(cls, user, course, course_structure, current_grading_policy_hash):
         """
@@ -53,8 +52,8 @@ class CourseGrade(object):
         if current_grading_policy_hash != persistent_grade.grading_policy_hash:
             course_grade.compute_and_update(read_only=False)
         else:
-            course_grade._percent = persistent_grade.percent_grade
-            course_grade._letter_grade = persistent_grade.letter_grade
+            course_grade._percent = persistent_grade.percent_grade  # pylint: disable=protected-access
+            course_grade._letter_grade = persistent_grade.letter_grade  # pylint: disable=protected-access
             course_grade.course_version = persistent_grade.course_version
             course_grade.course_edited_timestamp = persistent_grade.course_edited_timestamp
 
@@ -107,6 +106,10 @@ class CourseGrade(object):
 
     @lazy
     def chapter_grades(self):
+        """
+        Returns a list of chapters, each containing its subsection grades,
+        display name, and url name.
+        """
         chapter_grades = []
         for chapter_key in self.course_structure.get_children(self.course.location):
             chapter = self.course_structure[chapter_key]
