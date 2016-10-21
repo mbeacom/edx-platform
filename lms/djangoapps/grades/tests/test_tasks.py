@@ -69,18 +69,16 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         Ensures that the SCORE_CHANGED and COURSE_GRADE_UPDATE_REQUESTED signals enqueue the correct tasks.
         """
         self.set_up_course()
-        args = (
-            self.score_changed_kwargs['user_id'],
-            self.score_changed_kwargs['course_id'],
-        )
         if test_signal == SCORE_CHANGED:
-            args += (self.score_changed_kwargs['usage_id'], )
+            expected_args = self.score_changed_kwargs.values()
+        else:
+            expected_args = [self.score_changed_kwargs['user_id'], self.score_changed_kwargs['course_id']]
         with patch(
             enqueue_op,
             return_value=None
         ) as mock_task_apply:
             test_signal.send(sender=None, **self.score_changed_kwargs)
-            mock_task_apply.assert_called_once_with(args=tuple(self.score_changed_kwargs.values()))
+            mock_task_apply.assert_called_once_with(args=tuple(expected_args))
 
     @patch('lms.djangoapps.grades.signals.signals.COURSE_GRADE_UPDATE_REQUESTED.send')
     def test_subsection_update_triggers_course_update(self, mock_course_signal):
@@ -88,13 +86,7 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         Ensures that the subsection update operation also updates the course grade.
         """
         self.set_up_course()
-        recalculate_subsection_grade.apply(
-            args=(
-                self.score_changed_kwargs['user_id'],
-                self.score_changed_kwargs['course_id'],
-                self.score_changed_kwargs['usage_id'],
-            )
-        )
+        recalculate_subsection_grade.apply(args=tuple(self.score_changed_kwargs.values()))
         mock_course_signal.assert_called_once_with(
             sender=recalculate_subsection_grade,
             course_id=self.score_changed_kwargs['course_id'],

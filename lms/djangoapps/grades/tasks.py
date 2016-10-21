@@ -78,7 +78,7 @@ def recalculate_course_grade(user_id, course_id):
     """
     student = User.objects.get(id=user_id)
     course_key = CourseLocator.from_string(course_id)
-    course = get_course_by_id(course_key, depth=0)
+    course = modulestore().get_course(course_key, depth=0)
 
     try:
         CourseGradeFactory(student).update(course)
