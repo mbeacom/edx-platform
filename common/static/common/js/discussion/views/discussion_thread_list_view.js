@@ -42,18 +42,6 @@
                 this.filterTopics = function() {
                     return DiscussionThreadListView.prototype.filterTopics.apply(self, arguments);
                 };
-                this.toggleBrowseMenu = function() {
-                    return DiscussionThreadListView.prototype.toggleBrowseMenu.apply(self, arguments);
-                };
-                this.hideBrowseMenu = function() {
-                    return DiscussionThreadListView.prototype.hideBrowseMenu.apply(self, arguments);
-                };
-                this.showBrowseMenu = function() {
-                    return DiscussionThreadListView.prototype.showBrowseMenu.apply(self, arguments);
-                };
-                this.isBrowseMenuVisible = function() {
-                    return DiscussionThreadListView.prototype.isBrowseMenuVisible.apply(self, arguments);
-                };
                 this.threadRemoved = function() {
                     return DiscussionThreadListView.prototype.threadRemoved.apply(self, arguments);
                 };
@@ -74,9 +62,6 @@
                     return DiscussionThreadListView.prototype.renderThreads.apply(self, arguments);
                 };
 */
-                this.updateSidebar = function() {
-                    return DiscussionThreadListView.prototype.updateSidebar.apply(self, arguments);
-                };
                 this.addAndSelectThread = function() {
                     return DiscussionThreadListView.prototype.addAndSelectThread.apply(self, arguments);
                 };
@@ -162,7 +147,6 @@
                     return self.$('.search-alerts').empty();
                 });
                 this.template = edx.HtmlUtils.template($('#thread-list-template').html());
-                this.homeTemplate = edx.HtmlUtils.template($('#discussion-home-template').html());
                 this.threadListItemTemplate = edx.HtmlUtils.template($('#thread-list-item-template').html());
             };
 
@@ -214,37 +198,6 @@
                 });
             };
 
-            DiscussionThreadListView.prototype.updateSidebar = function() {
-                var amount, browseFilterHeight, discussionBody, discussionBottomOffset, discussionsBodyBottom,
-                    discussionsBodyTop, headerHeight, refineBarHeight, scrollTop, sidebar, sidebarHeight, topOffset,
-                    windowHeight;
-                scrollTop = $(window).scrollTop();
-                windowHeight = $(window).height();
-                discussionBody = $('.discussion-column');
-                discussionsBodyTop = discussionBody[0] ? discussionBody.offset().top : void 0;
-                discussionsBodyBottom = discussionsBodyTop + discussionBody.outerHeight();
-                sidebar = $('.forum-nav');
-                if (scrollTop > discussionsBodyTop - this.sidebar_padding) {
-                    sidebar.css('top', scrollTop - discussionsBodyTop + this.sidebar_padding);
-                } else {
-                    sidebar.css('top', '0');
-                }
-                sidebarHeight = windowHeight - Math.max(discussionsBodyTop - scrollTop, this.sidebar_padding);
-                topOffset = scrollTop + windowHeight;
-                discussionBottomOffset = discussionsBodyBottom + this.sidebar_padding;
-                amount = Math.max(topOffset - discussionBottomOffset, 0);
-                sidebarHeight = sidebarHeight - this.sidebar_padding - amount;
-                sidebarHeight = Math.min(sidebarHeight + 1, discussionBody.outerHeight());
-                sidebar.css('height', sidebarHeight);
-                headerHeight = this.$('.forum-nav-header').outerHeight();
-                refineBarHeight = this.$('.forum-nav-refine-bar').outerHeight();
-                browseFilterHeight = this.$('.forum-nav-browse-filter').outerHeight();
-                this.$('.forum-nav-thread-list')
-                    .css('height', (sidebarHeight - headerHeight - refineBarHeight - 2) + 'px');
-                this.$('.forum-nav-browse-menu')
-                    .css('height', (sidebarHeight - headerHeight - browseFilterHeight - 2) + 'px');
-            };
-
             DiscussionThreadListView.prototype.ignoreClick = function(event) {
                 return event.stopPropagation();
             };
@@ -263,7 +216,7 @@
                 this.$('.forum-nav-sort-control option').removeProp('selected');
                 this.$('.forum-nav-sort-control option[value=' + this.collection.sort_preference + ']')
                     .prop('selected', true);
-                $(window).bind('load scroll resize', this.updateSidebar);
+                // $(window).bind('load scroll resize', this.updateSidebar);
                 //this.displayedCollection.on('reset', this.renderThreads);
                 //this.displayedCollection.on('thread:remove', this.renderThreads);
                 this.displayedCollection.on('change:commentable_id', function() {
@@ -272,7 +225,7 @@
                     }
                 });
                 //this.renderThreads();
-                this.showBrowseMenu(true);
+                //this.showBrowseMenu(true);
                 return this;
             };
 
@@ -423,68 +376,6 @@
                 this.$(".forum-nav-thread[data-id='" + threadId + "'] .forum-nav-thread-link")
                     .addClass('is-active').find('.forum-nav-thread-wrapper-1')
                     .prepend($srElem);
-            };
-
-            DiscussionThreadListView.prototype.goHome = function() {
-                var url, $templateContent;
-                $templateContent = $(this.homeTemplate().toString());
-                $('.forum-content').empty().append($templateContent);
-                $('.forum-nav-thread-list a').removeClass('is-active').find('.sr')
-                    .remove();
-                $('input.email-setting').bind('click', this.updateEmailNotifications);
-                url = DiscussionUtil.urlFor('notifications_status', window.user.get('id'));
-                DiscussionUtil.safeAjax({
-                    url: url,
-                    type: 'GET',
-                    success: function(response) {
-                        $('input.email-setting').prop('checked', response.status);
-                    }
-                });
-            };
-
-            DiscussionThreadListView.prototype.isBrowseMenuVisible = function() {
-                return this.$('.forum-nav-browse-menu-wrapper').is(':visible');
-            };
-
-            DiscussionThreadListView.prototype.showBrowseMenu = function(initialLoad) {
-                if (!this.isBrowseMenuVisible()) {
-                    this.$('.forum-nav-browse-menu-wrapper').show();
-                    this.$('.forum-nav-thread-list-wrapper').hide();
-                    if (!initialLoad) {
-                        $('.forum-nav-browse-filter-input').focus();
-                        this.filterInputReset();
-                    }
-                    $('body').bind('click', this.hideBrowseMenu);
-                    return this.updateSidebar();
-                }
-            };
-
-            DiscussionThreadListView.prototype.hideBrowseMenu = function() {
-                var selectedTopicList = this.$('.forum-nav-browse-title.is-focused');
-                if (this.isBrowseMenuVisible()) {
-                    selectedTopicList.removeClass('is-focused');
-                    this.$('.forum-nav-browse-menu-wrapper').hide();
-                    this.$('.forum-nav-thread-list-wrapper').show();
-                    if (this.selectedTopicId !== 'undefined') {
-                        this.$('.forum-nav-browse-filter-input').attr('aria-activedescendant', this.selectedTopicId);
-                    }
-                    $('body').unbind('click', this.hideBrowseMenu);
-                    return this.updateSidebar();
-                }
-            };
-
-            DiscussionThreadListView.prototype.toggleBrowseMenu = function(event) {
-                var inputText = $('.forum-nav-browse-filter-input').val();
-                event.preventDefault();
-                event.stopPropagation();
-                if (this.isBrowseMenuVisible()) {
-                    return this.hideBrowseMenu();
-                } else {
-                    if (inputText !== '') {
-                        this.filterTopics(inputText);
-                    }
-                    return this.showBrowseMenu();
-                }
             };
 
             DiscussionThreadListView.prototype.getPathText = function(item) {
