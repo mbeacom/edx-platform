@@ -390,7 +390,7 @@
                             threadUrl: thread.urlFor('retrieve')
                         },
                         thread.toJSON()
-                    );
+                    );console.log($(this.threadListItemTemplate(context).toString()));
                 return $(this.threadListItemTemplate(context).toString());
             };
 

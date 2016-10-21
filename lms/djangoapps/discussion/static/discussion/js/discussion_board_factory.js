@@ -8,9 +8,11 @@
             'discussion/js/discussion_router',
             'discussion/js/views/discussion_fake_breadcrumbs',
             'discussion/js/views/discussion_search_view',
-            'common/js/discussion/views/new_post_view'
+            'discussion/js/views/discussion_topic_thread_list_view',
+            'common/js/discussion/views/new_post_view',
+
         ],
-        function($, Backbone, DiscussionRouter, DiscussionFakeBreadcrumbs, DiscussionSearchView, NewPostView) {
+        function($, Backbone, DiscussionRouter, DiscussionFakeBreadcrumbs, DiscussionSearchView, DiscussionTopicThreadListView, NewPostView) {
             return function(options) {
                 var userInfo = options.user_info,
                     sortPreference = options.sort_preference,
@@ -24,6 +26,7 @@
                     router,
                     breadcrumbs,
                     BreadcrumbsModel,
+                    DiscussionTopicThreadListViewModel,
                     searchBox,
                     routerEvents;
 
@@ -36,6 +39,7 @@
                 window.Content.loadContentInfos(contentInfo);
 
                 discussion = new window.Discussion(threads, {pages: threadPages, sort: sortPreference});
+                console.log(discussion);
                 courseSettings = new window.DiscussionCourseSettings(options.course_settings);
 
                 // Create the new post view
@@ -82,6 +86,12 @@
                         }
                     }
                 }).render();
+
+                discussionTopicThreadListView = new DiscussionTopicThreadListView({
+                        collection: this.discussion,
+                        el: $('.forum-nav'),
+                        courseSettings: this.course_settings
+                    }).render();
 
                 routerEvents = {
                     // Add new breadcrumbs and clear search box when the user selects topics
