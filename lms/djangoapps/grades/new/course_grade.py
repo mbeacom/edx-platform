@@ -30,9 +30,10 @@ class CourseGrade(object):
         self.course_version = getattr(course, 'course_version', None)
         self.course_edited_timestamp = getattr(course, 'subtree_edited_on', None)
         self.course_structure = course_structure
-        self.chapter_grades = []
         self._percent = None
         self._letter_grade = None
+        self.subsection_grade_factory = SubsectionGradeFactory(self.student, self.course, self.course_structure)
+
 
     @classmethod
     def load_persisted_grade(cls, user, course, course_structure, current_grading_policy_hash):
@@ -106,7 +107,22 @@ class CourseGrade(object):
 
     @lazy
     def chapter_grades(self):
-        self.compute_and_update()
+        chapter_grades = []
+        for chapter_key in self.course_structure.get_children(self.course.location):
+            chapter = self.course_structure[chapter_key]
+            chapter_subsection_grades = []
+            children = self.course_structure.get_children(chapter_key)
+            for subsection_key in children:
+                chapter_subsection_grades.append(
+                    self.subsection_grade_factory.create(self.course_structure[subsection_key], read_only=True)
+                )
+
+            chapter_grades.append({
+                'display_name': block_metadata_utils.display_name_with_default_escaped(chapter),
+                'url_name': block_metadata_utils.url_name_for_block(chapter),
+                'sections': chapter_subsection_grades
+            })
+        return chapter_grades
 
     @property
     def percent(self):
@@ -161,30 +177,14 @@ class CourseGrade(object):
 
         If read_only is True, doesn't save any updates to the grades.
         """
-        subsection_grade_factory = SubsectionGradeFactory(self.student, self.course, self.course_structure)
-        subsections_total = 0
-        for chapter_key in self.course_structure.get_children(self.course.location):
-            chapter = self.course_structure[chapter_key]
-            chapter_subsection_grades = []
-            children = self.course_structure.get_children(chapter_key)
-            subsections_total += len(children)
-            for subsection_key in children:
-                chapter_subsection_grades.append(
-                    subsection_grade_factory.create(self.course_structure[subsection_key], read_only=True)
-                )
-
-            self.chapter_grades.append({
-                'display_name': block_metadata_utils.display_name_with_default_escaped(chapter),
-                'url_name': block_metadata_utils.url_name_for_block(chapter),
-                'sections': chapter_subsection_grades
-            })
+        subsections_total = sum([len(chapter['sections']) for chapter in self.chapter_grades])
 
         total_graded_subsections = sum(len(x) for x in self.subsection_grade_totals_by_format.itervalues())
-        subsections_created = len(subsection_grade_factory._unsaved_subsection_grades)  # pylint: disable=protected-access
+        subsections_created = len(self.subsection_grade_factory._unsaved_subsection_grades)  # pylint: disable=protected-access
         subsections_read = subsections_total - subsections_created
         blocks_total = len(self.locations_to_scores)
         if not read_only:
-            subsection_grade_factory.bulk_create_unsaved()
+            self.subsection_grade_factory.bulk_create_unsaved()
             grading_policy_hash = self.course_structure.get_transformer_block_field(
                 self.course.location,
                 GradesTransformer,
