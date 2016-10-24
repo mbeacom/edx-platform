@@ -1,7 +1,6 @@
 """Tests covering time zone utilities."""
 from freezegun import freeze_time
 from student.tests.factories import UserFactory
-from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.lib.time_zone_utils import (
     get_display_time_zone,
     get_time_zone_abbr,
