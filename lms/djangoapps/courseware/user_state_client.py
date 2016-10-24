@@ -44,6 +44,10 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         even though the actual stored state in the database will be ``"{}"``).
     """
 
+    # metric accumulators
+    _nr_block_stats = {}
+    _nr_function_duration = {}
+
     # Use this sample rate for DataDog events.
     API_DATADOG_SAMPLE_RATE = 0.1
 
@@ -121,17 +125,65 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             sample_rate=self.API_DATADOG_SAMPLE_RATE,
         )
 
-    def _nr_capture_metric(self, function_name, stat_name, stat_value, block_type=None):
+    @staticmethod
+    def _nr_capture_metric(function_name, stat_name, stat_value, block_type=None):
         """
         Capture a statistic about this user state transaction in New Relic.
         """
         metric_name_parts = []
+        # in any case, stat_name is always last
         if block_type is None:
             metric_name_parts = ['xb_user_state', function_name, stat_name]
         else:
             metric_name_parts = ['xb_user_state', function_name, block_type, stat_name]
         metric_name = '.'.join(metric_name_parts)
         newrelic.agent.add_custom_parameter(metric_name, stat_value)
+
+    @classmethod
+    def _nr_accumulate_stats(cls, function_name, block_stats=None, duration=None):
+        """Accumulate stats related to user state transactions"""
+        # accumulate stats related to blocks
+        if block_stats is not None:
+            for block_type in block_stats.keys():
+                for stat_name in block_stats[block_type].keys():
+                    # setup data structure
+                    cls._nr_block_stats.setdefault(function_name, {})
+                    cls._nr_block_stats[function_name].setdefault(block_type, {})
+                    cls._nr_block_stats[function_name][block_type].setdefault(stat_name, 0)
+                    # accumulate step
+                    cls._nr_block_stats[function_name][block_type][stat_name] += block_stats[block_type][stat_name]
+
+        # accumulate states related to function durations
+        if duration is not None:
+           # setup data structure
+           cls._nr_function_duration.setdefault(function_name, 0)
+           # accumulate step
+           cls._nr_function_duration[function_name] += duration
+
+    @classmethod
+    def nr_flush(cls):
+        """
+        Flush collected stats out to NR.  Call this after the last call to
+        get_many or set_many.
+        """
+        for function_name in ['get_many', 'set_many']:
+            if not cls._nr_block_stats.has_key(function_name):
+                continue
+            if not cls._nr_function_duration.has_key(function_name):
+                continue
+            total_block_count = total_block_size = 0
+            for block_info in cls._nr_block_stats[function_name].values():
+                total_block_count += block_info['count']
+                total_block_size += block_info['size']
+            cls._nr_capture_metric(function_name, 'num_items', total_block_count)
+            cls._nr_capture_metric(function_name, 'data_size', total_block_size)
+            cls._nr_capture_metric(function_name, 'duration', cls._nr_function_duration[function_name])
+            for block_type, block_info in cls._nr_block_stats[function_name].iteritems():
+                cls._nr_capture_metric(function_name, 'num_items', block_info['count'], block_type=block_type)
+                cls._nr_capture_metric(function_name, 'data_size', block_info['size'], block_type=block_type)
+        # clear the accumulators
+        cls._nr_block_stats.clear()
+        cls._nr_block_stats.clear()
 
     def get_many(self, username, block_keys, scope=Scope.user_state, fields=None):
         """
@@ -150,7 +202,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         if scope != Scope.user_state:
             raise ValueError("Only Scope.user_state is supported, not {}".format(scope))
 
-        block_stats_by_type = {}
+        block_stats = {}
         evt_time = time()
 
         self._ddog_histogram(evt_time, 'get_many.blks_requested', len(block_keys))
@@ -172,12 +224,10 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             if state == {}:
                 continue
 
-            # collect statistics for DataDog/New Relic reporting
-            block_stats_by_type.setdefault(usage_key.block_type, {})
-            block_stats_by_type[usage_key.block_type].setdefault('count', 0)
-            block_stats_by_type[usage_key.block_type].setdefault('size', 0)
-            block_stats_by_type[usage_key.block_type]['count'] += 1
-            block_stats_by_type[usage_key.block_type]['size'] += state_length
+            # collect statistics for metric reporting
+            block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
+            block_stats[usage_key.block_type]['count'] += 1
+            block_stats[usage_key.block_type]['size'] += state_length
 
             # filter state on fields
             if fields is not None:
@@ -188,19 +238,14 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 }
             yield XBlockUserState(username, usage_key, state, module.modified, scope)
 
-        # The rest of this method exists only to submit DataDog and New Relic metrics.
+        # The rest of this method exists only to report metrics.
         finish_time = time()
         duration = (finish_time - evt_time) * 1000  # milliseconds
-        total_block_count = sum([block_info['count'] for block_info in block_stats_by_type.values()])
-        total_state_length = sum([block_info['size'] for block_info in block_stats_by_type.values()])
+        total_block_count = sum([block_info['count'] for block_info in block_stats.values()])
+
         self._ddog_histogram(evt_time, 'get_many.blks_out', total_block_count)
         self._ddog_histogram(evt_time, 'get_many.response_time', duration)
-        self._nr_capture_metric('get_many', 'num_items', total_block_count)
-        self._nr_capture_metric('get_many', 'data_size', total_state_length)
-        self._nr_capture_metric('get_many', 'duration', duration)
-        for block_type, block_info in block_stats_by_type.iteritems():
-            self._nr_capture_metric('get_many', 'num_items', block_info['count'], block_type=block_type)
-            self._nr_capture_metric('get_many', 'data_size', block_info['size'], block_type=block_type)
+        self._nr_accumulate_stats('get_many', block_stats=block_stats, duration=duration)
 
     def set_many(self, username, block_keys_to_state, scope=Scope.user_state):
         """
@@ -231,6 +276,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             # what we have.
             return
 
+        block_stats = {}
         evt_time = time()
 
         for usage_key, state in block_keys_to_state.items():
@@ -268,10 +314,14 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                     log.warning("set_many: All {} block keys: {}".format(
                         len(block_keys_to_state), block_keys_to_state.keys()
                     ))
+                else:
+                    # collect statistics for metric reporting
+                    block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
+                    block_stats[usage_key.block_type]['count'] += 1
+                    block_stats[usage_key.block_type]['size'] += len(student_module.state)
 
-            # The rest of this method exists only to submit DataDog events.
-            # Remove it once we're no longer interested in the data.
-            #
+            # The rest of this method exists only to report metrics.
+
             # Record whether a state row has been created or updated.
             if created:
                 self._ddog_increment(evt_time, 'set_many.state_created')
@@ -289,10 +339,17 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             num_fields_updated = max(0, len(state) - num_new_fields_set)
             self._ddog_histogram(evt_time, 'set_many.fields_updated', num_fields_updated)
 
+            if created:
+                block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
+                block_stats[usage_key.block_type]['count'] += 1
+                block_stats[usage_key.block_type]['size'] += len(student_module.state)
+
         # Events for the entire set_many call.
         finish_time = time()
+        duration = (finish_time - evt_time) * 1000  # milliseconds
         self._ddog_histogram(evt_time, 'set_many.blks_updated', len(block_keys_to_state))
-        self._ddog_histogram(evt_time, 'set_many.response_time', (finish_time - evt_time) * 1000)
+        self._ddog_histogram(evt_time, 'set_many.response_time', duration)
+        self._nr_accumulate_stats('set_many', block_stats=block_stats, duration=duration)
 
     def delete_many(self, username, block_keys, scope=Scope.user_state, fields=None):
         """
