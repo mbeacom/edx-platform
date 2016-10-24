@@ -67,7 +67,7 @@ class DateSummary(object):
     @property
     def time_zone(self):
         """
-        The time zone to display in -- defaulted to UTC
+        The time zone in which to display -- defaults to UTC
         """
         return pytz.timezone(
             self.user.preferences.model.get_value(self.user, "time_zone", 'UTC')
