@@ -49,7 +49,7 @@ class CourseGrade(object):
             return None
         course_grade = CourseGrade(user, course, course_structure)
 
-        current_grading_policy_hash = course_grade._get_grading_policy_hash(course.location, course_structure)
+        current_grading_policy_hash = course_grade.get_grading_policy_hash(course.location, course_structure)
         if current_grading_policy_hash != persistent_grade.grading_policy_hash:
             course_grade.compute_and_update(read_only=False)
         else:
@@ -189,7 +189,7 @@ class CourseGrade(object):
         blocks_total = len(self.locations_to_scores)
         if not read_only:
             self.subsection_grade_factory.bulk_create_unsaved()
-            grading_policy_hash = self._get_grading_policy_hash(self.course.location, self.course_structure)
+            grading_policy_hash = self.get_grading_policy_hash(self.course.location, self.course_structure)
             PersistentCourseGrade.update_or_create_course_grade(
                 user_id=self.student.id,
                 course_id=self.course.id,
@@ -234,6 +234,18 @@ class CourseGrade(object):
             earned += child_earned
             possible += child_possible
         return earned, possible
+
+    @staticmethod
+    def get_grading_policy_hash(course_location, course_structure):
+        """
+        Gets the grading policy of the course at the given location
+        in the given course structure.
+        """
+        return course_structure.get_transformer_block_field(
+            course_location,
+            GradesTransformer,
+            'grading_policy_hash'
+        )
 
     @staticmethod
     def _calc_percent(grade_value):
@@ -291,18 +303,6 @@ class CourseGrade(object):
             self.course.id,
             self.student.id
         ))
-
-    def _get_grading_policy_hash(self, course_location, course_structure):
-        """
-        Gets the grading policy of the course at the given location
-        in the given course structure.
-        """
-        return course_structure.get_transformer_block_field(
-            course_location,
-            GradesTransformer,
-            'grading_policy_hash'
-        )
-
 
 
 class CourseGradeFactory(object):
