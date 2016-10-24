@@ -547,7 +547,7 @@ msgstr "يجب أن يتألّف اسمك القانوني من حرفين عل�
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr ""
 "يجب أن تحتوي أسماء المستخدمين على حروف وأرقام وحرف الخط السفلي(_) "

@@ -425,7 +425,7 @@ msgstr ""
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr ""
 

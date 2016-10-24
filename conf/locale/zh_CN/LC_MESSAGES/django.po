@@ -714,7 +714,7 @@ msgstr "你的合法名字必须至少包含两个字符的长度"
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr "用户名只能包含字母、数字、下划线(_)、连字符(-)"
 

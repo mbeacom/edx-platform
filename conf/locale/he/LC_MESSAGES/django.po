@@ -460,7 +460,7 @@ msgstr "שמך צריך להכיל לפחות שני תווים"
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr ""
 "שמות המשתמשים חייבים לכלול רק אותיות, מספרים, קווים תחתונים (_) ומקף (-)."

@@ -403,7 +403,7 @@ msgstr "غخعق مثلشم رشوث وعسف زث ش وهرهوعو خب فصخ
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr ""
 "عسثقرشوثس وعسف ذخرفشهر خرمغ مثففثقس, رعوزثقس, عريثقسذخقثس (_), شري اغحاثرس "

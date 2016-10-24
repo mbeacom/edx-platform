@@ -589,7 +589,7 @@ msgstr "Su nombre legal debe tener por lo menos dos caracteres"
 
 #: common/djangoapps/student/forms.py
 msgid ""
-"Usernames must contain only letters, numbers, underscores (_), and hyphens "
+"Usernames must contain only English letters, numbers, underscores (_), and hyphens "
 "(-)."
 msgstr ""
 "Los nombres de usuario solo deben contener letras, números, guiones bajos "
