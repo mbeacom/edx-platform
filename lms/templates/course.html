@@ -5,10 +5,6 @@ from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
 %>
 <%page args="course" expression_filter="h"/>
-<%
-    container_string = _("Starts: {date}")
-    date = course.retrieve_datetime()
-%>
 <article class="course" id="${course.id}" role="region" aria-label="${course.display_name_with_default}">
   <a href="${reverse('about_course', args=[course.id.to_deprecated_string()])}">
     <header class="course-image">
@@ -23,15 +19,29 @@ from django.core.urlresolvers import reverse
         <span class="course-code">${course.display_number_with_default}</span>
         <span class="course-title">${course.display_name_with_default}</span>
       </h2>
-##       <div class="course-date" aria-hidden="true">${_("Starts")}: ${course.start_datetime_text()}</div>
-      <div class="course-date localized_datetime" aria-hidden="true" data-format="shortDate" data-datetime="${date}" data-string="${container_string}"></div>
-    </div>
+        <%
+            container_string = _("Starts: {date}")
+            course_start_date = course.retrieve_starttime()
+        %>
+      % if isinstance(course_start_date, str):
+        <div class="course-date" aria-hidden="true">${_("Starts")}: ${course_start_date}</div>
+      % else:
+           <%
+               course_date_string = course_start_date.strftime('%Y-%m-%dT%H:%M:%S%z')
+           %>
+          <div class="course-date localized_datetime" aria-hidden="true" data-format="shortDate" data-datetime="${course_date_string}" data-string="${container_string}"></div>
+      % endif
+      </div>
     <div class="sr">
       <ul>
       <li>${course.display_org_with_default}</li>
       <li>${course.display_number_with_default}</li>
-      <li>${_("Starts")}: <time class="localized_datetime" itemprop="startDate" data-format="shortDate" data-datetime="${date}"></time></li>
-    </ul>
+      %if isinstance(course_start_date, str):
+          <li>${_("Starts")}: <time itemprop="startDate" datetime="${course_start_date}">${course_start_date}</time></li>
+      %else:
+          <li>${_("Starts")}: <time class="localized_datetime" itemprop="startDate" data-format="shortDate" data-datetime="${course_date_string}"></time></li>
+      %endif
+      </ul>
     </div>
   </a>
 </article>

@@ -359,16 +359,21 @@ class CourseOverview(TimeStampedModel):
         """
         return course_metadata_utils.course_starts_within(self.start, days)
 
-    def retrieve_datetime(self, get_start=True):
+    def retrieve_starttime(self):
         """
-        Returns the desired datetime string corresponding to the course's salient date
-        formatted as an ISO string.
+        Returns the desired datetime object corresponding to the course start date
         """
-        if get_start is True:
-            return_date = self.start
-        else:
-            return_date = self.end
-        return return_date.strftime('%Y-%m-%dT%H:%M:%S%z')
+        # pylint: disable=no-member
+        return self.start
+        # pylint: enable=no-member
+
+    def retrieve_endtime(self):
+        """
+        Returns the desired datetime object corresponding to the course's ending date
+        """
+        # pylint: disable=no-member
+        return self.end
+        # pylint: enable=no-member
 
     def start_datetime_text(self, format_string="SHORT_DATE", time_zone=utc):
         """

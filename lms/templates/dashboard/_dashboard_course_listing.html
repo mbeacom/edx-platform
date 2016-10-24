@@ -106,25 +106,31 @@ from student.helpers import (
                 format = None
             else:
                 format = 'shortDate'
-                time_zone = user.preferences.model.get_value(user, "time_zone")
+##                 time_zone = user.preferences.model.get_value(user, "time_zone")
                 if course_overview.has_ended():
                     container_string = _("Ended - {date}")
-                    date = course_overview.retrieve_datetime(get_start=False)
+                    course_date = course_overview.retrieve_endtime()
                 elif course_overview.has_started():
                     container_string = _("Started - {date}")
-                    date = course_overview.retrieve_datetime()
+                    course_date = course_overview.retrieve_starttime()
                 elif course_overview.starts_within(days=5):
                     container_string = _("Starts - {date}")
-                    date = course_overview.retrieve_datetime()
+                    course_date = course_overview.retrieve_starttime()
                     format = 'defaultFormat'
                 else: ## hasn't started yet
                     container_string = _("Starts - {date}")
-                    date = course_overview.retrieve_datetime()
+                    course_date = course_overview.retrieve_starttime()
                 endif
             endif
           %>
-        <span class="info-date-block localized-datetime" data-tooltip="Hi" data-timezone=${time_zone} data-datetime="${date}" data-format=${format} data-string="${container_string}"></span>
-
+            % if isinstance(course_date, str):
+                <span class="info-date-block" data-tooltip="Hi">${_(container_string).format(date=course_date)}</span>
+            % else:
+                <%
+                    course_date_string = course_date.strftime('%Y-%m-%dT%H:%M:%S%z')
+                %>
+                <span class="info-date-block localized-datetime" lang="${user_language}" data-tooltip="Hi" data-timezone="${user_timezone}" data-datetime="${course_date_string}" data-format=${format} data-string="${container_string}"></span>
+            % endif
         </div>
         <div class="wrapper-course-actions">
           <div class="course-actions">

@@ -962,7 +962,7 @@ class BaseDueDateTests(ModuleStoreTestCase):
             category='sequential',
             parent_location=chapter.location,
             due=datetime(2013, 9, 18, 11, 30, 00),
-            format='due'
+            format='homework'
         )
         vertical = ItemFactory.create(category='vertical', parent_location=section.location)
         ItemFactory.create(category='problem', parent_location=vertical.location)
@@ -986,7 +986,6 @@ class BaseDueDateTests(ModuleStoreTestCase):
         # remove the timezone.
         course = self.set_up_course(due_date_display_format=None, show_timezone=False)
         response = self.get_response(course)
-        print response
         self.assertContains(response, self.time_with_tz)
         # Test that show_timezone has been cleared (which means you get the default value of True).
         self.assertTrue(course.show_timezone)
@@ -994,21 +993,18 @@ class BaseDueDateTests(ModuleStoreTestCase):
     def test_defaults(self):
         course = self.set_up_course()
         response = self.get_response(course)
-        print response
         self.assertContains(response, self.time_with_tz)
 
     def test_format_none(self):
         # Same for setting the due date to None
         course = self.set_up_course(due_date_display_format=None)
         response = self.get_response(course)
-        print response
         self.assertContains(response, self.time_with_tz)
 
     def test_format_date(self):
         # due date with no time
         course = self.set_up_course(due_date_display_format=u"%b %d %y")
         response = self.get_response(course)
-        print response
         self.assertContains(response, self.time_with_tz)
 
     def test_format_invalid(self):
