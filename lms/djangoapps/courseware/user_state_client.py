@@ -4,6 +4,7 @@ data in a Django ORM model.
 """
 
 import itertools
+from collections import defaultdict
 from operator import attrgetter
 from time import time
 import logging
@@ -45,8 +46,19 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
     """
 
     # metric accumulators
-    _nr_block_stats = {}
-    _nr_function_duration = {}
+    #
+    # _nr_block_stats is a doubly nested dict which should be referenced in the
+    # following order:
+    #
+    #     _nr_block_stats[function_name][block_type][stat_name]
+    #
+    # where the result is a number value described by stat_name, and specific
+    # to the given block_type and function_name.
+    #
+    _nr_block_stats = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    # _nr_function_duration represents the total time in milliseconds (the
+    # value) spent in some function (the key).
+    _nr_function_duration = defaultdict(int)
 
     # Use this sample rate for DataDog events.
     API_DATADOG_SAMPLE_RATE = 0.1
@@ -146,18 +158,10 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         if block_stats is not None:
             for block_type in block_stats.keys():
                 for stat_name in block_stats[block_type].keys():
-                    # setup data structure
-                    cls._nr_block_stats.setdefault(function_name, {})
-                    cls._nr_block_stats[function_name].setdefault(block_type, {})
-                    cls._nr_block_stats[function_name][block_type].setdefault(stat_name, 0)
-                    # accumulate step
                     cls._nr_block_stats[function_name][block_type][stat_name] += block_stats[block_type][stat_name]
 
         # accumulate states related to function durations
         if duration is not None:
-           # setup data structure
-           cls._nr_function_duration.setdefault(function_name, 0)
-           # accumulate step
            cls._nr_function_duration[function_name] += duration
 
     @classmethod
@@ -202,7 +206,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         if scope != Scope.user_state:
             raise ValueError("Only Scope.user_state is supported, not {}".format(scope))
 
-        block_stats = {}
+        block_stats = defaultdict(lambda: defaultdict(int))
         evt_time = time()
 
         self._ddog_histogram(evt_time, 'get_many.blks_requested', len(block_keys))
@@ -225,7 +229,6 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 continue
 
             # collect statistics for metric reporting
-            block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
             block_stats[usage_key.block_type]['count'] += 1
             block_stats[usage_key.block_type]['size'] += state_length
 
@@ -276,7 +279,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             # what we have.
             return
 
-        block_stats = {}
+        block_stats = defaultdict(lambda: defaultdict(int))
         evt_time = time()
 
         for usage_key, state in block_keys_to_state.items():
@@ -316,7 +319,6 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                     ))
                 else:
                     # collect statistics for metric reporting
-                    block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
                     block_stats[usage_key.block_type]['count'] += 1
                     block_stats[usage_key.block_type]['size'] += len(student_module.state)
 
@@ -340,7 +342,6 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             self._ddog_histogram(evt_time, 'set_many.fields_updated', num_fields_updated)
 
             if created:
-                block_stats.setdefault(usage_key.block_type, {'count': 0, 'size': 0})
                 block_stats[usage_key.block_type]['count'] += 1
                 block_stats[usage_key.block_type]['size'] += len(student_module.state)
 
