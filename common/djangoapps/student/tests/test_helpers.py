@@ -2,7 +2,6 @@
 
 import logging
 
-from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import RequestFactory
 from testfixtures import LogCapture
@@ -24,7 +23,7 @@ class TestLoginHelper(TestCase):
         with LogCapture(LOGGER_NAME, level=logging.ERROR) as logger:
             req = self.request.get("http://testserver/login?next=http://amazon.com")
             next_page = get_next_url_for_login_page(req)
-            self.assertEqual(next_page, '/dashboard')
+            self.assertEqual(next_page, '/home')
             logger.check(
                 (LOGGER_NAME, "ERROR", u"Unsafe redirect parameter detected: u'http://amazon.com'"))
 
