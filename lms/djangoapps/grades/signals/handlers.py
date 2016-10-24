@@ -11,7 +11,7 @@ from openedx.core.lib.grade_utils import is_score_higher
 from student.models import user_by_anonymous_id
 from submissions.models import score_set, score_reset
 
-from .signals import COURSE_GRADE_UPDATE_REQUESTED, SCORE_CHANGED, SCORE_PUBLISHED
+from .signals import SUBSECTION_SCORE_CHANGED, SCORE_CHANGED, SCORE_PUBLISHED
 from ..tasks import recalculate_subsection_grade, recalculate_course_grade
 
 
@@ -134,12 +134,12 @@ def enqueue_subsection_update(sender, **kwargs):  # pylint: disable=unused-argum
     )
 
 
-@receiver(COURSE_GRADE_UPDATE_REQUESTED)
+@receiver(SUBSECTION_SCORE_CHANGED)
 def enqueue_course_update(sender, **kwargs):  # pylint: disable=unused-argument
     """
-    Handles the COURSE_GRADE_UPDATE_REQUESTED signal by enqueueing a course update operation to occur asynchronously.
+    Handles the SUBSECTION_SCORE_CHANGED signal by enqueueing a course update operation to occur asynchronously.
     """
     if isinstance(sender, Task):  # We're already in a async worker, just do the task
-        recalculate_course_grade.apply(args=(kwargs['user_id'], kwargs['course_id']))
+        recalculate_course_grade.apply(args=(kwargs['user'].id, unicode(kwargs['course'].id)))
     else:  # Otherwise, queue the work to be done asynchronously
-        recalculate_course_grade.apply_async(args=(kwargs['user_id'], kwargs['course_id']))
+        recalculate_course_grade.apply_async(args=(kwargs['user'].id, unicode(kwargs['course'].id)))

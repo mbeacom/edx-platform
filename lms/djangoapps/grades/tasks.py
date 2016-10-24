@@ -58,7 +58,7 @@ def recalculate_subsection_grade(user_id, course_id, usage_id, only_if_higher):
                 only_if_higher,
             )
             SUBSECTION_SCORE_CHANGED.send(
-                sender=None,
+                sender=recalculate_subsection_grade,
                 course=course,
                 user=student,
                 subsection_grade=subsection_grade,

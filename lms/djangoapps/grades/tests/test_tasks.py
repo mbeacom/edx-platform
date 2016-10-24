@@ -7,16 +7,19 @@ import ddt
 from django.conf import settings
 from django.db.utils import IntegrityError
 from mock import patch
+from uuid import uuid4
 from unittest import skip
 
+from opaque_keys.edx.locator import CourseLocator
 from student.models import anonymous_id_for_user
 from student.tests.factories import UserFactory
+from xmodule.modulestore.django import modulestore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory, check_mongo_calls
 
 from lms.djangoapps.grades.config.models import PersistentGradesEnabledFlag
-from lms.djangoapps.grades.signals.signals import COURSE_GRADE_UPDATE_REQUESTED, SCORE_CHANGED
+from lms.djangoapps.grades.signals.signals import SCORE_CHANGED, SUBSECTION_SCORE_CHANGED
 from lms.djangoapps.grades.tasks import recalculate_course_grade, recalculate_subsection_grade
 
 
@@ -61,36 +64,46 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
 
     @ddt.data(
         ('lms.djangoapps.grades.tasks.recalculate_subsection_grade.apply_async', SCORE_CHANGED),
-        ('lms.djangoapps.grades.tasks.recalculate_course_grade.apply_async', COURSE_GRADE_UPDATE_REQUESTED)
+        ('lms.djangoapps.grades.tasks.recalculate_course_grade.apply_async', SUBSECTION_SCORE_CHANGED)
     )
     @ddt.unpack
     def test_signal_queues_task(self, enqueue_op, test_signal):
         """
-        Ensures that the SCORE_CHANGED and COURSE_GRADE_UPDATE_REQUESTED signals enqueue the correct tasks.
+        Ensures that the SCORE_CHANGED and SUBSECTION_SCORE_CHANGED signals enqueue the correct tasks.
         """
         self.set_up_course()
         if test_signal == SCORE_CHANGED:
+            send_args = self.score_changed_kwargs
             expected_args = tuple(self.score_changed_kwargs.values())
         else:
+            send_args = {'user': self.user, 'course': self.course}
             expected_args = (self.score_changed_kwargs['user_id'], self.score_changed_kwargs['course_id'])
         with patch(
             enqueue_op,
             return_value=None
         ) as mock_task_apply:
-            test_signal.send(sender=None, **self.score_changed_kwargs)
+            test_signal.send(sender=None, **send_args)
             mock_task_apply.assert_called_once_with(args=expected_args)
 
-    @patch('lms.djangoapps.grades.signals.signals.COURSE_GRADE_UPDATE_REQUESTED.send')
+    @patch('lms.djangoapps.grades.signals.signals.SUBSECTION_SCORE_CHANGED.send')
     def test_subsection_update_triggers_course_update(self, mock_course_signal):
         """
         Ensures that the subsection update operation also updates the course grade.
         """
         self.set_up_course()
-        recalculate_subsection_grade.apply(args=tuple(self.score_changed_kwargs.values()))
+        mock_return = uuid4()
+        course_key = CourseLocator.from_string(unicode(self.course.id))
+        course = modulestore().get_course(course_key, depth=0)
+        with patch(
+            'lms.djangoapps.grades.new.subsection_grade.SubsectionGradeFactory.update',
+            return_value=mock_return
+        ):
+            recalculate_subsection_grade.apply(args=tuple(self.score_changed_kwargs.values()))
         mock_course_signal.assert_called_once_with(
             sender=recalculate_subsection_grade,
-            course_id=self.score_changed_kwargs['course_id'],
-            user_id=self.score_changed_kwargs['user_id'],
+            course=course,
+            user=self.user,
+            subsection_grade=mock_return,
         )
 
     @ddt.data(True, False)
@@ -111,10 +124,10 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
 
         with patch(executed, return_value=None) as executed_task:
             with patch(other, return_value=None) as other_task:
-                COURSE_GRADE_UPDATE_REQUESTED.send(
+                SUBSECTION_SCORE_CHANGED.send(
                     sender=sender,
-                    course_id=self.score_changed_kwargs['course_id'],
-                    user_id=self.score_changed_kwargs['user_id'],
+                    course=self.course,
+                    user=self.user,
                 )
                 other_task.assert_not_called()
                 executed_task.assert_called_once_with(
@@ -165,7 +178,8 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         with self.store.default_store(default_store):
             self.set_up_course(enable_subsection_grades=False)
             self.assertFalse(PersistentGradesEnabledFlag.feature_enabled(self.course.id))
-            with check_mongo_calls(2) and self.assertNumQueries(5):
+            additional_queries = 1 if default_store == ModuleStoreEnum.Type.mongo else 0
+            with check_mongo_calls(2) and self.assertNumQueries(12 + additional_queries):
                 recalculate_subsection_grade.apply(args=tuple(self.score_changed_kwargs.values()))
 
     @skip("Pending completion of TNL-5089")
