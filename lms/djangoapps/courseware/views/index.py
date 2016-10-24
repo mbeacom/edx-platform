@@ -401,7 +401,6 @@ class CoursewareIndex(View):
             self.request,
             self.course,
             table_of_contents['chapters'],
-            courseware_context['language_preference'],
         )
 
         # entrance exam data
