@@ -1,0 +1,4 @@
+# DON'T JUST ADD NEW DEPENDENCIES!!!
+# This file is only for packages that are used in testing and NOT in production
+
+pysqlite==2.8.3
