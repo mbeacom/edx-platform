@@ -171,9 +171,8 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         get_many or set_many.
         """
         for function_name in ['get_many', 'set_many']:
-            if not cls._nr_block_stats.has_key(function_name):
-                continue
-            if not cls._nr_function_duration.has_key(function_name):
+            if function_name not in cls._nr_block_stats or \
+               function_name not in cls._nr_function_duration:
                 continue
             total_block_count = total_block_size = 0
             for block_info in cls._nr_block_stats[function_name].values():
