@@ -122,8 +122,8 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
             sender = recalculate_subsection_grade
         self.set_up_course()
 
-        with patch(executed, return_value=None) as executed_task:
-            with patch(other, return_value=None) as other_task:
+        with patch(executed) as executed_task:
+            with patch(other) as other_task:
                 SUBSECTION_SCORE_CHANGED.send(
                     sender=sender,
                     course=self.course,
