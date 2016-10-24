@@ -183,7 +183,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 cls._nr_capture_metric(function_name, 'data_size', block_info['size'], block_type=block_type)
         # clear the accumulators
         cls._nr_block_stats.clear()
-        cls._nr_block_stats.clear()
+        cls._nr_function_duration.clear()
 
     def get_many(self, username, block_keys, scope=Scope.user_state, fields=None):
         """
