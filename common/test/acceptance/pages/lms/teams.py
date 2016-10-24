@@ -6,7 +6,7 @@ Teams pages.
 from common.test.acceptance.pages.lms.course_page import CoursePage
 from common.test.acceptance.pages.lms.discussion import InlineDiscussionPage
 from common.test.acceptance.pages.common.paging import PaginatedUIMixin
-from common.test.acceptance.pages.common.utils import confirm_prompt
+from common.test.acceptance.pages.common.utils import click_css, confirm_prompt
 
 from common.test.acceptance.pages.lms.fields import FieldsMixin
 
@@ -211,6 +211,8 @@ class BaseTeamsPage(CoursePage, PaginatedUIMixin, TeamCardsMixin, BreadcrumbsMix
         the same convention as a course module's topic.
         """
         super(BaseTeamsPage, self).__init__(browser, course_id)
+        self.browser = browser
+        self.course_id = course_id
         self.topic = topic
 
     def is_browser_on_page(self):
@@ -248,7 +250,10 @@ class BaseTeamsPage(CoursePage, PaginatedUIMixin, TeamCardsMixin, BreadcrumbsMix
         query = self.q(css=CREATE_TEAM_LINK_CSS)
         if query.present:
             query.first.click()
-            self.wait_for_ajax()
+
+        # This will bring you to the team management page
+        tm_page = TeamManagementPage(self.browser, self.course_id, self.topic)
+        tm_page.wait_for_page()
 
     def click_search_team_link(self):
         """ Click on create team link."""
@@ -332,7 +337,8 @@ class TeamManagementPage(CoursePage, FieldsMixin, BreadcrumbsMixin):
 
     def is_browser_on_page(self):
         """Check if we're on the create team page for a particular topic."""
-        return self.q(css='.team-edit-fields').present
+        return self.q(css='.team-edit-fields').present \
+            and self.q(css='button.action.action-primary > span.sr').visible
 
     @property
     def header_page_name(self):
@@ -444,7 +450,7 @@ class TeamPage(CoursePage, PaginatedUIMixin, BreadcrumbsMixin):
         if self.team:
             if not self.url.endswith(self.url_path):
                 return False
-        return self.q(css='.team-profile').present
+        return self.q(css='div.teams-main div.team-language').visible
 
     @property
     def discussion_id(self):
@@ -502,7 +508,9 @@ class TeamPage(CoursePage, PaginatedUIMixin, BreadcrumbsMixin):
 
     def click_leave_team_link(self, remaining_members=0, cancel=False):
         """ Click on Leave Team link"""
-        self.q(css='.leave-team-link').first.click()
+        leave_team_css = '.leave-team-link'
+        self.wait_for_element_visibility(leave_team_css, 'Leave Team link is visible.')
+        click_css(self, leave_team_css, require_notification=False)
         confirm_prompt(self, cancel, require_notification=False)
 
         if cancel is False:

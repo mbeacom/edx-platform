@@ -67,6 +67,7 @@ class TeamsTabBase(EventsTestMixin, UniqueCourseTest):
             # Sadly, this sleep is necessary in order to ensure that
             # sorting by last_activity_at works correctly when running
             # in Jenkins.
+            # THIS IS AN ANTI-PATTERN - DO NOT COPY.
             time.sleep(time_between_creation)
         return teams
 
