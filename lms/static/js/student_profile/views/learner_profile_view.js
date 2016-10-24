@@ -77,10 +77,11 @@
                     });
 
                     this.tabbedView.render();
-
+                    
                     if (tabs.length === 1) {
                     // If the tab is unambiguous, don't display the tab interface.
                         this.tabbedView.$el.find('.page-content-nav').hide();
+                        this.tabbedView.$el.find('.page-content-main .tabs .tabpanel').removeAttr('role');
                     }
 
                     this.$el.find('.account-settings-container').append(this.tabbedView.el);
