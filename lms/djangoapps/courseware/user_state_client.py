@@ -162,7 +162,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
 
         # accumulate states related to function durations
         if duration is not None:
-           cls._nr_function_duration[function_name] += duration
+            cls._nr_function_duration[function_name] += duration
 
     @classmethod
     def nr_flush(cls):
