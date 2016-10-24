@@ -35,7 +35,7 @@ class CourseGrade(object):
         self.subsection_grade_factory = SubsectionGradeFactory(self.student, self.course, self.course_structure)
 
     @classmethod
-    def load_persisted_grade(cls, user, course, course_structure, current_grading_policy_hash):
+    def load_persisted_grade(cls, user, course, course_structure):
         """
         Initializes a CourseGrade object, filling its members with persisted values from the database.
 
@@ -49,6 +49,7 @@ class CourseGrade(object):
             return None
         course_grade = CourseGrade(user, course, course_structure)
 
+        current_grading_policy_hash = course_grade._get_grading_policy_hash(course.location, course_structure)
         if current_grading_policy_hash != persistent_grade.grading_policy_hash:
             course_grade.compute_and_update(read_only=False)
         else:
@@ -127,7 +128,7 @@ class CourseGrade(object):
             })
         return chapter_grades
 
-    @property
+    @lazy
     def percent(self):
         """
         Returns a rounded percent from the overall grade.
@@ -136,7 +137,7 @@ class CourseGrade(object):
             self._percent = self._calc_percent(self.grade_value)
         return self._percent
 
-    @property
+    @lazy
     def letter_grade(self):
         """
         Returns a letter representing the grade.
@@ -188,11 +189,7 @@ class CourseGrade(object):
         blocks_total = len(self.locations_to_scores)
         if not read_only:
             self.subsection_grade_factory.bulk_create_unsaved()
-            grading_policy_hash = self.course_structure.get_transformer_block_field(
-                self.course.location,
-                GradesTransformer,
-                'grading_policy_hash',
-            )
+            grading_policy_hash = self._get_grading_policy_hash(self.course.location, self.course_structure)
             PersistentCourseGrade.update_or_create_course_grade(
                 user_id=self.student.id,
                 course_id=self.course.id,
@@ -295,6 +292,18 @@ class CourseGrade(object):
             self.student.id
         ))
 
+    def _get_grading_policy_hash(self, course_location, course_structure):
+        """
+        Gets the grading policy of the course at the given location
+        in the given course structure.
+        """
+        return course_structure.get_transformer_block_field(
+            course_location,
+            GradesTransformer,
+            'grading_policy_hash'
+        )
+
+
 
 class CourseGradeFactory(object):
     """
@@ -336,16 +345,10 @@ class CourseGradeFactory(object):
         if not PersistentGradesEnabledFlag.feature_enabled(course.id):
             return None
 
-        current_grading_policy_hash = course_structure.get_transformer_block_field(
-            course.location,
-            GradesTransformer,
-            'grading_policy_hash'
-        )
         saved_course_grade = CourseGrade.load_persisted_grade(
             self.student,
             course,
-            course_structure,
-            current_grading_policy_hash
+            course_structure
         )
         return saved_course_grade
 
