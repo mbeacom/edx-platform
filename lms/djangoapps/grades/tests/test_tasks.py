@@ -19,7 +19,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory, check_mongo_calls
 
 from lms.djangoapps.grades.config.models import PersistentGradesEnabledFlag
-from lms.djangoapps.grades.signals.signals import SCORE_CHANGED, SUBSECTION_SCORE_CHANGED
+from lms.djangoapps.grades.signals.signals import PROBLEM_SCORE_CHANGED, SUBSECTION_SCORE_CHANGED
 from lms.djangoapps.grades.tasks import recalculate_course_grade, recalculate_subsection_grade
 
 
@@ -63,16 +63,16 @@ class RecalculateSubsectionGradeTest(ModuleStoreTestCase):
         # pylint: enable=attribute-defined-outside-init,no-member
 
     @ddt.data(
-        ('lms.djangoapps.grades.tasks.recalculate_subsection_grade.apply_async', SCORE_CHANGED),
+        ('lms.djangoapps.grades.tasks.recalculate_subsection_grade.apply_async', PROBLEM_SCORE_CHANGED),
         ('lms.djangoapps.grades.tasks.recalculate_course_grade.apply_async', SUBSECTION_SCORE_CHANGED)
     )
     @ddt.unpack
     def test_signal_queues_task(self, enqueue_op, test_signal):
         """
-        Ensures that the SCORE_CHANGED and SUBSECTION_SCORE_CHANGED signals enqueue the correct tasks.
+        Ensures that the PROBLEM_SCORE_CHANGED and SUBSECTION_SCORE_CHANGED signals enqueue the correct tasks.
         """
         self.set_up_course()
-        if test_signal == SCORE_CHANGED:
+        if test_signal == PROBLEM_SCORE_CHANGED:
             send_args = self.score_changed_kwargs
             expected_args = tuple(self.score_changed_kwargs.values())
         else:

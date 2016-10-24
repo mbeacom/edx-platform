@@ -11,7 +11,7 @@ from openedx.core.lib.grade_utils import is_score_higher
 from student.models import user_by_anonymous_id
 from submissions.models import score_set, score_reset
 
-from .signals import SUBSECTION_SCORE_CHANGED, SCORE_CHANGED, SCORE_PUBLISHED
+from .signals import PROBLEM_SCORE_CHANGED, SUBSECTION_SCORE_CHANGED, SCORE_PUBLISHED
 from ..tasks import recalculate_subsection_grade, recalculate_course_grade
 
 
@@ -22,9 +22,9 @@ log = getLogger(__name__)
 def submissions_score_set_handler(sender, **kwargs):  # pylint: disable=unused-argument
     """
     Consume the score_set signal defined in the Submissions API, and convert it
-    to a SCORE_CHANGED signal defined in this module. Converts the unicode keys
+    to a PROBLEM_SCORE_CHANGED signal defined in this module. Converts the unicode keys
     for user, course and item into the standard representation for the
-    SCORE_CHANGED signal.
+    PROBLEM_SCORE_CHANGED signal.
 
     This method expects that the kwargs dictionary will contain the following
     entries (See the definition of score_set):
@@ -42,7 +42,7 @@ def submissions_score_set_handler(sender, **kwargs):  # pylint: disable=unused-a
     if user is None:
         return
 
-    SCORE_CHANGED.send(
+    PROBLEM_SCORE_CHANGED.send(
         sender=None,
         points_earned=points_earned,
         points_possible=points_possible,
@@ -56,9 +56,9 @@ def submissions_score_set_handler(sender, **kwargs):  # pylint: disable=unused-a
 def submissions_score_reset_handler(sender, **kwargs):  # pylint: disable=unused-argument
     """
     Consume the score_reset signal defined in the Submissions API, and convert
-    it to a SCORE_CHANGED signal indicating that the score has been set to 0/0.
+    it to a PROBLEM_SCORE_CHANGED signal indicating that the score has been set to 0/0.
     Converts the unicode keys for user, course and item into the standard
-    representation for the SCORE_CHANGED signal.
+    representation for the PROBLEM_SCORE_CHANGED signal.
 
     This method expects that the kwargs dictionary will contain the following
     entries (See the definition of score_reset):
@@ -72,7 +72,7 @@ def submissions_score_reset_handler(sender, **kwargs):  # pylint: disable=unused
     if user is None:
         return
 
-    SCORE_CHANGED.send(
+    PROBLEM_SCORE_CHANGED.send(
         sender=None,
         points_earned=0,
         points_possible=0,
@@ -107,7 +107,7 @@ def score_published_handler(sender, block, user, raw_earned, raw_possible, only_
     if update_score:
         set_score(user.id, block.location, raw_earned, raw_possible)
 
-        SCORE_CHANGED.send(
+        PROBLEM_SCORE_CHANGED.send(
             sender=None,
             points_earned=raw_earned,
             points_possible=raw_possible,
@@ -119,10 +119,10 @@ def score_published_handler(sender, block, user, raw_earned, raw_possible, only_
     return update_score
 
 
-@receiver(SCORE_CHANGED)
+@receiver(PROBLEM_SCORE_CHANGED)
 def enqueue_subsection_update(sender, **kwargs):  # pylint: disable=unused-argument
     """
-    Handles the SCORE_CHANGED signal by enqueueing a subsection update operation to occur asynchronously.
+    Handles the PROBLEM_SCORE_CHANGED signal by enqueueing a subsection update operation to occur asynchronously.
     """
     recalculate_subsection_grade.apply_async(
         args=(
