@@ -124,10 +124,10 @@ from django.utils.http import urlquote_plus
                                         <span>${_("Verification Declined" )}</span>
                                     %elif requirement['status'] == 'satisfied':
                                         <span class="fa fa-check" aria-hidden="true"></span>
-                                        <%
-                                           data_string = _('Completed by {date}')
-                                        %>
-                                        <span class="localized-datetime" data-datetime="${requirement['status_date']}" data-string="${data_string}" data-timezone="${time_zone}" lang="${language}"</span>
+##                                         <%
+##                                            string_datetime = requirement['status_date'].strftime('%Y-%m-%dT%H:%M:%S%z')
+##                                         %>
+                                        <span class="localized-datetime" data-datetime="${requirement['status_date']}" data-string="${_('due {date}')}" data-timezone="${user_timezone}" lang="${user_language}"</span>
                                     %endif
                                 %else:
                                     <span class="not-achieve">${_("Upcoming")}</span>
@@ -174,10 +174,7 @@ from django.utils.http import urlquote_plus
                     ${section.format | h}
 
                     %if section.due is not None:
-                        <%
-                           data_string = _('due {date}')
-                        %>
-                        <em class="localized-datetime" data-datetime="${section.due}" data-string="${data_string}" data-timezone="${time_zone}" lang="${language}"></em>
+                        <em class="localized-datetime" data-datetime="${section.due}" data-string="${_('due {date}')}" data-timezone="${user_timezone}" lang="${user_language}"></em>
                     %endif
                   </p>
 

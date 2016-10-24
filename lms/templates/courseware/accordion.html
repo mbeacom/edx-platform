@@ -55,7 +55,7 @@ else:
                         ## completed proctored exam statuses should not show the due date
                         ## since the exam has already been submitted by the user
                         % if not section['proctoring'].get('in_completed_state', False):
-                             <span class="localized-datetime subtitle-name" data-datetime="${section['due']}" data-timezone="${user_timezone}" lang="${user_language}"></span>
+                             <span class="localized-datetime subtitle-name" data-datetime="${section['due']}" data-string="${data_string}" data-timezone="${user_timezone}" lang="${user_language}"></span>
                         % endif
                     % else:
                         ## non-proctored section, we just show the exam format and the due date

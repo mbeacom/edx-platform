@@ -106,7 +106,6 @@ from student.helpers import (
                 format = None
             else:
                 format = 'shortDate'
-##                 time_zone = user.preferences.model.get_value(user, "time_zone")
                 if course_overview.has_ended():
                     container_string = _("Ended - {date}")
                     course_date = course_overview.retrieve_endtime()
