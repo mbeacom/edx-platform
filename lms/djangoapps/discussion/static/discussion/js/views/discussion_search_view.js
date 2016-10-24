@@ -41,7 +41,7 @@
             },
             clearSearch: function() {
                 this.$('.search-input').val('');
-                this.threadListView.clearSearchAlerts();
+                //this.threadListView.clearSearchAlerts();
             }
         });
 

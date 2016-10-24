@@ -41,7 +41,6 @@
                 window.Content.loadContentInfos(contentInfo);
 
                 discussion = new window.Discussion(threads, {pages: threadPages, sort: sortPreference});
-                console.log(discussion);
                 courseSettings = new window.DiscussionCourseSettings(options.course_settings);
 
                 // Create the new post view
@@ -64,7 +63,7 @@
                 // Initialize and render search box
                 searchBox = new DiscussionSearchView({
                     el: $('.forum-search'),
-                    threadListView: router.nav
+                    threadListView: router.discussionThreadListView
                 }).render();
 
                 // Initialize and render breadcrumbs
@@ -83,7 +82,7 @@
                             searchBox.clearSearch();
                             this.model.set('contents', []);
                             router.navigate('', {trigger: true});
-                            router.nav.toggleBrowseMenu(event);
+                            router.discussionBoardView.toggleBrowseMenu(event);
                         }
                     }
                 }).render();
@@ -92,11 +91,11 @@
                     collection: discussion,
                     el: $('.discussion-body'),
                     courseSettings: courseSettings
-                }).render(); console.log(discussionBoardView);
+                }).render();
 
                 discussionThreadListView = new DiscussionThreadListView({
                     collection: discussion,
-                    el: $('.forum-nav-thread-list'),
+                    el: $('.discussion-thread-list-container'),
                     courseSettings: courseSettings
                 }).render();
                 router.discussionThreadListView = discussionThreadListView;
